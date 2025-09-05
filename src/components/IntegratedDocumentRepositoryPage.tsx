@@ -1,0 +1,242 @@
+
+import React, { useState, useMemo } from 'react';
+import { Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+
+// Define the type for a document
+interface Document {
+  id: number;
+  name: string;
+  type: 'GST Return' | 'Invoice' | 'Registration Form';
+  returnPeriod: '1 Month' | '3 Months' | 'Yearly';
+}
+
+type SortableColumns = 'name' | 'type' | 'returnPeriod';
+
+const IntegratedDocumentRepositoryPage: React.FC = () => {
+  // State for documents, form inputs, filter, and search
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [docName, setDocName] = useState('');
+  const [docType, setDocType] = useState<'GST Return' | 'Invoice' | 'Registration Form'>('GST Return');
+  const [returnPeriod, setReturnPeriod] = useState<'1 Month' | '3 Months' | 'Yearly'>('1 Month');
+  const [filterPeriod, setFilterPeriod] = useState<string>('All');
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [sortColumn, setSortColumn] = useState<SortableColumns>('name');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Handle adding a new document
+  const handleAddDocument = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!docName.trim()) return; // Basic validation
+
+    const newDocument: Document = {
+      id: Date.now(),
+      name: docName,
+      type: docType,
+      returnPeriod: returnPeriod,
+    };
+
+    setDocuments([newDocument, ...documents]);
+
+    // Clear form fields
+    setDocName('');
+    setDocType('GST Return');
+    setReturnPeriod('1 Month');
+  };
+
+  // Handle deleting a document
+  const handleDeleteDocument = (id: number) => {
+    setDocuments(documents.filter(doc => doc.id !== id));
+  };
+
+  const handleSort = (column: SortableColumns) => {
+    if (sortColumn === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  };
+
+  // Filter and search logic
+  const filteredAndSortedDocuments = useMemo(() => {
+    return documents
+      .filter(doc => {
+        if (filterPeriod === 'All') return true;
+        return doc.returnPeriod === filterPeriod;
+      })
+      .filter(doc => {
+        return doc.name.toLowerCase().includes(searchTerm.toLowerCase());
+      })
+      .sort((a, b) => {
+        const aValue = a[sortColumn];
+        const bValue = b[sortColumn];
+
+        if (aValue < bValue) {
+          return sortDirection === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortDirection === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+  }, [documents, filterPeriod, searchTerm, sortColumn, sortDirection]);
+
+  return (
+    <div className="container mx-auto p-4 md:p-8 bg-gray-50 dark:bg-gray-900 min-h-screen">
+      <h1 className="text-3xl font-bold mb-6 text-gray-800 dark:text-white">Integrated Document Repository</h1>
+
+      {/* Add Document Form */}
+      <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md mb-8">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-700 dark:text-gray-200">Add New Document</h2>
+        <form onSubmit={handleAddDocument} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div className="md:col-span-1">
+            <label htmlFor="docName" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Document Name</label>
+            <input
+              id="docName"
+              type="text"
+              value={docName}
+              onChange={(e) => setDocName(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+              placeholder="e.g., GSTR-3B April"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="docType" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Document Type</label>
+            <select
+              id="docType"
+              value={docType}
+              onChange={(e) => setDocType(e.target.value as any)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              <option>GST Return</option>
+              <option>Invoice</option>
+              <option>Registration Form</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="returnPeriod" className="block text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Return Period</label>
+            <select
+              id="returnPeriod"
+              value={returnPeriod}
+              onChange={(e) => setReturnPeriod(e.target.value as any)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            >
+              <option>1 Month</option>
+              <option>3 Months</option>
+              <option>Yearly</option>
+            </select>
+          </div>
+          <button
+            type="submit"
+            className="w-full md:w-auto bg-indigo-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            Add Document
+          </button>
+        </form>
+      </div>
+
+      {/* Filter and Search */}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md mb-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="flex items-center gap-4">
+          <label htmlFor="filterPeriod" className="text-sm font-medium text-gray-600 dark:text-gray-300">Filter by Period:</label>
+          <select
+            id="filterPeriod"
+            value={filterPeriod}
+            onChange={(e) => setFilterPeriod(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+          >
+            <option value="All">All</option>
+            <option>1 Month</option>
+            <option>3 Months</option>
+            <option>Yearly</option>
+          </select>
+        </div>
+        <div className="w-full md:w-1/3">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+            placeholder="Search by document name..."
+          />
+        </div>
+      </div>
+
+      {/* Document List */}
+      <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
+        <h2 className="text-2xl font-semibold mb-4 text-gray-700 dark:text-gray-200">Your Documents</h2>
+        <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">
+                    <button onClick={() => handleSort('name')} className="flex items-center">
+                      Document Name
+                      {sortColumn === 'name' && (sortDirection === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />)}
+                    </button>
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">
+                    <button onClick={() => handleSort('type')} className="flex items-center">
+                      Type
+                      {sortColumn === 'type' && (sortDirection === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />)}
+                    </button>
+                  </th>
+                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider dark:text-gray-300">
+                    <button onClick={() => handleSort('returnPeriod')} className="flex items-center">
+                      Return Period
+                      {sortColumn === 'returnPeriod' && (sortDirection === 'asc' ? <ArrowUp size={16} /> : <ArrowDown size={16} />)}
+                    </button>
+                  </th>
+                  <th scope="col" className="relative px-6 py-3">
+                    <span className="sr-only">Actions</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200 dark:bg-gray-800 dark:divide-gray-700">
+                {filteredAndSortedDocuments.length > 0 ? (
+                  filteredAndSortedDocuments.map(doc => (
+                    <tr key={doc.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/50 animate-fade-in">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{doc.name}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{doc.type}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{doc.returnPeriod}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button
+                          onClick={() => handleDeleteDocument(doc.id)}
+                          className="text-red-600 hover:text-red-800 dark:text-red-500 dark:hover:text-red-400 flex items-center"
+                        >
+                          <Trash2 size={18} className="mr-1" />
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={4} className="text-center text-gray-500 dark:text-gray-400 py-8">
+                      {documents.length === 0 ? "No documents yet. Add a document to start." : "No documents match your filter/search criteria."}
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+      </div>
+    </div>
+  );
+};
+
+export default IntegratedDocumentRepositoryPage;
+
+// Simple fade-in animation
+const style = document.createElement('style');
+style.innerHTML = `
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+`;
+document.head.appendChild(style);
